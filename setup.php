@@ -1,15 +1,25 @@
 <?php
+// এরর ডিবাগিং চালু করা হলো
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+echo "Attempting to connect to database...<br>";
+
+// আপনার রেলওয়ে ক্রেডেনশিয়াল
 $host = "centerbeam.proxy.rlwy.net";
 $port = 24312;
 $user = "root";
 $pass = "ADwnbbasvyjzFpIFcicWDVgZJtwKVNLY";
 $db   = "railway";
 
+// কানেকশন তৈরি
 $conn = new mysqli($host, $user, $pass, $db, $port);
 
+// কানেকশন চেক
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
+echo "Connected successfully!<br>";
 
 // users টেবিল তৈরির কুয়েরি
 $sql = "CREATE TABLE IF NOT EXISTS users (
