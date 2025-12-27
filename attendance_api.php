@@ -1,4 +1,5 @@
 <?php
+header("Content-Type: application/json");
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -17,88 +18,65 @@ if ($conn->connect_error) {
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method == 'POST') {
+    // আগের মতো POST লজিক থাকবে (Check-in/Out সেভ করার জন্য)
     $data = json_decode(file_get_contents('php://input'), true);
-    
-    if (!$data) {
-        echo json_encode(["status" => "error", "message" => "No data provided"]);
-        exit;
-    }
+    if (!$data) { echo json_encode(["status" => "error", "message" => "No data"]); exit; }
 
-    $employee_id = $data['employee_id'];
-    $user_name = $data['user_name'];
-    $department = $data['department'];
+    $emp_id = $data['employee_id'];
+    $u_name = $data['user_name'];
+    $dept = $data['department'];
     $date = $data['date'];
-    $check_in = isset($data['check_in']) ? $data['check_in'] : null;
-    $check_out = isset($data['check_out']) ? $data['check_out'] : null;
+    $c_in = $data['check_in'] ?? null;
+    $c_out = $data['check_out'] ?? null;
     $status = $data['status'];
 
-    // Check if record exists
-    $check_sql = "SELECT id FROM attendance WHERE employee_id = ? AND date = ?";
-    $stmt = $conn->prepare($check_sql);
-    $stmt->bind_param("ss", $employee_id, $date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        // Update
-        $row = $result->fetch_assoc();
-        $id = $row['id'];
-        
-        $update_parts = [];
-        $params = [];
-        $types = "";
-
-        if ($check_in) {
-            $update_parts[] = "check_in = ?";
-            $params[] = $check_in;
-            $types .= "s";
-        }
-        if ($check_out) {
-            $update_parts[] = "check_out = ?";
-            $params[] = $check_out;
-            $types .= "s";
-        }
-        $update_parts[] = "status = ?";
-        $params[] = $status;
-        $types .= "s";
-
-        $types .= "i";
-        $params[] = $id;
-
-        $update_sql = "UPDATE attendance SET " . implode(", ", $update_parts) . " WHERE id = ?";
-        $stmt = $conn->prepare($update_sql);
-        $stmt->bind_param($types, ...$params);
-        
-        if ($stmt->execute()) {
-            echo json_encode(["status" => "success", "message" => "Attendance updated"]);
-        } else {
-            echo json_encode(["status" => "error", "message" => $stmt->error]);
-        }
+    $check = $conn->query("SELECT id FROM attendance WHERE employee_id = '$emp_id' AND date = '$date'");
+    if ($check->num_rows > 0) {
+        $sql = "UPDATE attendance SET check_out='$c_out', status='$status' WHERE employee_id='$emp_id' AND date='$date'";
     } else {
-        // Insert
-        $insert_sql = "INSERT INTO attendance (employee_id, user_name, department, date, check_in, check_out, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($insert_sql);
-        $stmt->bind_param("sssssss", $employee_id, $user_name, $department, $date, $check_in, $check_out, $status);
-        
-        if ($stmt->execute()) {
-            echo json_encode(["status" => "success", "message" => "Attendance saved"]);
-        } else {
-            echo json_encode(["status" => "error", "message" => $stmt->error]);
-        }
+        $sql = "INSERT INTO attendance (employee_id, user_name, department, date, check_in, status) VALUES ('$emp_id', '$u_name', '$dept', '$date', '$c_in', '$status')";
     }
+    
+    if ($conn->query($sql)) { echo json_encode(["status" => "success"]); } 
+    else { echo json_encode(["status" => "error", "message" => $conn->error]); }
+
 } else if ($method == 'GET') {
-    $employee_id = $_GET['employee_id'] ?? '';
-    if ($employee_id) {
-        $sql = "SELECT * FROM attendance WHERE employee_id = ? ORDER BY date DESC";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("s", $employee_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
+    
+    // ১. নির্দিষ্ট এমপ্লয়ির হিস্ট্রি দেখার জন্য
+    if (isset($_GET['employee_id'])) {
+        $emp_id = $_GET['employee_id'];
+        $res = $conn->query("SELECT * FROM attendance WHERE employee_id = '$emp_id' ORDER BY date DESC");
         $rows = [];
-        while($r = $result->fetch_assoc()) {
-            $rows[] = $r;
-        }
+        while($r = $res->fetch_assoc()) { $rows[] = $r; }
         echo json_encode($rows);
+    } 
+    
+    // ২. অ্যাডমিন সামারি (Present/Absent) দেখার জন্য
+    else if (isset($_GET['summary_today'])) {
+        $today = date('Y-m-d');
+        
+        // আজকে যারা উপস্থিত (Present)
+        $present_res = $conn->query("SELECT * FROM attendance WHERE date = '$today'");
+        $present = [];
+        $present_ids = [];
+        while($r = $present_res->fetch_assoc()) {
+            $present[] = $r;
+            $present_ids[] = $r['employee_id'];
+        }
+
+        // যারা অনুপস্থিত (Absent) - Users টেবিল থেকে তুলনা করে
+        $absent = [];
+        $users_res = $conn->query("SELECT employee_id, first_name, last_name FROM users");
+        while($u = $users_res->fetch_assoc()) {
+            if (!in_array($u['employee_id'], $present_ids)) {
+                $absent[] = $u;
+            }
+        }
+
+        echo json_encode([
+            "present" => $present,
+            "absent" => $absent
+        ]);
     }
 }
 
