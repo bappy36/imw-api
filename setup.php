@@ -5,13 +5,14 @@ ini_set('display_errors', 1);
 
 echo "Attempting to connect to database...<br>";
 
-// আপনার রেলওয়ে ক্রেডেনশিয়াল$host = "centerbeam.proxy.rlwy.net";
+// আপনার রেলওয়ে ক্রেডেনশিয়াল (দয়া করে নিশ্চিত করুন এখানে কোনো টাইপো নেই)
+$host = "centerbeam.proxy.rlwy.net";
 $port = 24312;
 $user = "root";
 $pass = "ADwnbbasvyjzFpIFcicWDVgZJtwKVNLY";
 $db   = "railway";
 
-// কানেকশন তৈরি
+// কানেকশন তৈরি (ভেরিয়েবলগুলো সব ছোট হাতের অক্ষরে নিশ্চিত করা হয়েছে)
 $conn = new mysqli($host, $user, $pass, $db, $port);
 
 // কানেকশন চেক
@@ -20,7 +21,7 @@ if ($conn->connect_error) {
 }
 echo "Connected successfully!<br><br>";
 
-// ১. users টেবিল
+// ১. users টেবিল তৈরি
 $sql_users = "CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(50),
@@ -33,34 +34,22 @@ $sql_users = "CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255),
     pin VARCHAR(4)
 )";
+$conn->query($sql_users);
 
-if ($conn->query($sql_users) === TRUE) {
-    echo "Table 'users' checked/created successfully!<br>";
-} else {
-    echo "Error creating 'users' table: " . $conn->error . "<br>";
-}
-
-// ২. attendance টেবিল
+// ২. attendance টেবিল তৈরি
 $sql_attendance = "CREATE TABLE IF NOT EXISTS attendance (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id VARCHAR(50) NOT NULL,
     user_name VARCHAR(255) NOT NULL,
-    department VARCHAR(100),
     date DATE NOT NULL,
     check_in VARCHAR(20),
     check_out VARCHAR(20),
     status VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_daily_attendance (employee_id, date) 
 )";
+$conn->query($sql_attendance);
 
-if ($conn->query($sql_attendance) === TRUE) {
-    echo "Table 'attendance' checked/created successfully!<br>";
-} else {
-    echo "Error creating 'attendance' table: " . $conn->error . "<br>";
-}
-
-// ৩. orders টেবিল (অর্ডার ডিটেইলস এর জন্য নতুন)
+// ৩. orders টেবিল তৈরি (অর্ডার আপলোড করার জন্য)
 $sql_orders = "CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     local_id INT,
@@ -77,16 +66,15 @@ $sql_orders = "CREATE TABLE IF NOT EXISTS orders (
     status VARCHAR(100),
     project_deal_price VARCHAR(100),
     date_of_completion VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )";
 
 if ($conn->query($sql_orders) === TRUE) {
-    echo "Table 'orders' checked/created successfully!<br>";
+    echo "All tables (users, attendance, orders) are ready!<br>";
 } else {
-    echo "Error creating 'orders' table: " . $conn->error . "<br>";
+    echo "Error creating tables: " . $conn->error . "<br>";
 }
 
 $conn->close();
-echo "<br>Setup process completed.";
+echo "<br>Setup completed successfully.";
 ?>
