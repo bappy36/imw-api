@@ -12,6 +12,7 @@ $conn = new mysqli($host, $user, $pass, $db, $port);
 
 $action = $_POST['action'] ?? '';
 
+// ১. সাইনআপ
 if ($action == 'signup') {
     $first_name = $_POST['first_name'];
     $last_name = $_POST['last_name'];
@@ -33,7 +34,8 @@ if ($action == 'signup') {
     }
 }
 
-if ($action == 'login') {
+// ২. লগইন
+elseif ($action == 'login') {
     $employee_id = $_POST['employee_id'];
     $pin = $_POST['pin'];
 
@@ -47,5 +49,23 @@ if ($action == 'login') {
         echo json_encode(["success" => false, "message" => "Invalid ID or PIN"]);
     }
 }
+
+// ৩. অটো চেক-আউট (এটি আপনার location_service.dart এর জন্য প্রয়োজন)
+elseif ($action == 'auto_check_out') {
+    $employee_id = $_POST['employee_id'];
+    $date = $_POST['date'];
+    $check_out = $_POST['check_out'];
+    $status = $_POST['status'];
+
+    $sql = "UPDATE attendance SET check_out='$check_out', status='$status' 
+            WHERE employee_id='$employee_id' AND date='$date' AND check_out IS NULL";
+
+    if ($conn->query($sql)) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["success" => false, "error" => $conn->error]);
+    }
+}
+
 $conn->close();
 ?>
