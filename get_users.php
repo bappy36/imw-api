@@ -17,7 +17,7 @@ try {
     }
 
     // ইউজার টেবিল থেকে নাম নিয়ে আসা
-    $sql = "SELECT first_name, last_name FROM users";
+    $sql = "SELECT employee_id, first_name, last_name, email, phone, department, access_type FROM users";
     $result = $conn->query($sql);
 
     $users = [];
