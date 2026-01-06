@@ -102,6 +102,32 @@ elseif ($action == 'auto_check_out') {
         echo json_encode(["success" => false, "error" => $conn->error]);
     }
 }
+// ৬. ইউজার আপডেট করা
+elseif ($action == 'update_user') {
+    $employee_id = $_POST['employee_id'];
+    $first_name = $_POST['first_name'];
+    $last_name = $_POST['last_name'];
+    $email = $_POST['email'];
+    $phone = $_POST['phone'];
+    $department = $_POST['department'];
+    $access_type = $_POST['access_type'];
+
+    $sql = "UPDATE users SET 
+            first_name = '$first_name', 
+            last_name = '$last_name', 
+            email = '$email', 
+            phone = '$phone', 
+            department = '$department', 
+            access_type = '$access_type' 
+            WHERE employee_id = '$employee_id'";
+
+    if ($conn->query($sql)) {
+        echo json_encode(["success" => true, "message" => "User updated successfully"]);
+    } else {
+        echo json_encode(["success" => false, "message" => "Update failed: " . $conn->error]);
+    }
+}
+
 
 $conn->close();
 ?>
